@@ -10,6 +10,10 @@ describe('deck', () => {
   it('has unique ids', () => {
     expect(deckById.size).toBe(deck.length);
   });
+
+  it('gives every built-in Chinese card an example sentence that contains it, for fill-in-the-blank', () => {
+    for (const card of deck) if (card.lang === 'zh') expect(card.example, card.word).toContain(card.word);
+  });
 });
 
 describe('buildSession', () => {

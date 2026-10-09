@@ -16,7 +16,8 @@
   "dependencies": {
     "pinyin-pro": "^3.29.4",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "wanakana": "^5.3.1"
   },
   "devDependencies": {
     "@types/node": "^24.19.1",

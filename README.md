@@ -13,6 +13,11 @@ Japanese and Chinese are studied separately, each with its own session.
 
   Ten new words a day. Words you already know can be skipped with "I already know this", and they don't count toward the ten.
 - **Chinese: revision plus your own phrases.** Advanced words, 成语 and everyday expressions (内卷, 躺平, 破防…). You see the meaning and pinyin and write the characters, to fight 提笔忘字. **Add a phrase** saves things you pick up from conversations, shows and songs, with where you heard it and an example line. Pinyin fills in automatically. Your phrases always join the next revision, ahead of the built-in ones.
+- **Different exercises, picked per card.** Every exercise ends in remembered or forgot, so the model learns from all of them:
+  - *Flashcard*: introduces a new Japanese word.
+  - *Type the reading*: in kana or romaji (gakkou, がっこう and ガッコウ all count), checked automatically. Missing a long vowel or double consonant counts as "almost". A wrong answer can be overruled if it was only a typo.
+  - *Listen*: your phone says the word, and you pick its meaning from four. This uses the device's built-in Japanese voice, and the exercise is skipped on devices without one.
+  - *Fill the blank*: Chinese phrases are tested inside an example sentence. Built-in cards have one, and your own phrases use the line you saved.
 - **A model decides what to review.** Memora uses half-life regression ([Settles & Meeder, 2016](https://aclanthology.org/P16-1174/), the model behind Duolingo's scheduling). Each card gets a memory half-life from its features (times right, times wrong, Chinese or Japanese, same meaning or false friend). A card is due once its predicted recall drops below 85%. The model's weights learn from every answer you give, so the predictions fit your memory over time.
 
 Progress is saved in your browser. **Export reviews (CSV)** on the home screen downloads your full review log, ready for training a better model offline.
@@ -32,7 +37,8 @@ Other commands: `npm test` runs the tests, and `npm run build` creates a static 
 - `src/lib/model.ts`: half-life regression: features, predictions and online learning
 - `src/lib/progress.ts`: per-card history, the review log and saving
 - `src/lib/scheduler.ts`: builds each session from due cards and the daily allowance of new cards
-- `src/components/`: the home, study, summary and add-a-phrase screens
+- `src/lib/activities.ts`, `src/lib/answers.ts`, `src/lib/speech.ts`: picking an exercise, checking typed answers, Japanese text-to-speech
+- `src/components/`: the home, study (with `activities.tsx` for each exercise), summary and add-a-phrase screens
 
 ## Next steps
 

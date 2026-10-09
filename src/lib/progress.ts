@@ -1,6 +1,7 @@
 /** What Memora remembers about you: per-card history, the model's learned weights, and the full review log. */
 
 import type { Card, ChineseCard } from '../data/deck.ts';
+import type { Mode } from './activities.ts';
 import { DEFAULT_WEIGHTS, features, halfLife, learn, recallChance } from './model.ts';
 
 export interface CardProgress {
@@ -24,6 +25,8 @@ export interface Review {
   timesWrongBefore: number;
   predicted: number;
   recalled: boolean;
+  /** Which exercise it was. Not a model feature yet, but logged so a retrained model can learn that listening is harder than typing. */
+  mode?: Mode;
 }
 
 export interface Progress {
@@ -48,7 +51,7 @@ export function recallNow(progress: Progress, card: Card, now: number): number |
   return recallChance(h, (now - seen.lastReview) / DAY_MS);
 }
 
-export function recordReview(progress: Progress, card: Card, recalled: boolean, now: number): Progress {
+export function recordReview(progress: Progress, card: Card, recalled: boolean, now: number, mode?: Mode): Progress {
   const seen = progress.cards[card.id];
   const timesRight = seen?.timesRight ?? 0;
   const timesWrong = seen?.timesWrong ?? 0;
@@ -69,7 +72,10 @@ export function recordReview(progress: Progress, card: Card, recalled: boolean, 
     },
     // A first sighting has no gap to learn from: it says nothing about forgetting.
     weights: seen ? learn(progress.weights, x, gapDays, recalled) : progress.weights,
-    reviews: [...progress.reviews, { card: card.id, at: now, gapDays, timesRightBefore: timesRight, timesWrongBefore: timesWrong, predicted, recalled }],
+    reviews: [
+      ...progress.reviews,
+      { card: card.id, at: now, gapDays, timesRightBefore: timesRight, timesWrongBefore: timesWrong, predicted, recalled, ...(mode && { mode }) },
+    ],
   };
 }
 

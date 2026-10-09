@@ -155,11 +155,11 @@ function formatDuration(days: number): string {
 
 function exportReviews(cards: Card[], progress: Progress) {
   const byId = new Map(cards.map((card) => [card.id, card]));
-  const header = 'card,lang,kind,reviewed_at,gap_days,times_right_before,times_wrong_before,predicted,recalled';
+  const header = 'card,lang,kind,mode,reviewed_at,gap_days,times_right_before,times_wrong_before,predicted,recalled';
   const lines = progress.reviews.map((r) => {
     const card = byId.get(r.card);
     const kind = card ? (card.lang === 'ja' ? card.relation : card.kind) : '';
-    return [r.card, card?.lang ?? '', kind, new Date(r.at).toISOString(), r.gapDays.toFixed(4), r.timesRightBefore, r.timesWrongBefore, r.predicted.toFixed(4), r.recalled ? 1 : 0].join(',');
+    return [r.card, card?.lang ?? '', kind, r.mode ?? '', new Date(r.at).toISOString(), r.gapDays.toFixed(4), r.timesRightBefore, r.timesWrongBefore, r.predicted.toFixed(4), r.recalled ? 1 : 0].join(',');
   });
   const url = URL.createObjectURL(new Blob([[header, ...lines].join('\n')], { type: 'text/csv' }));
   const link = document.createElement('a');
