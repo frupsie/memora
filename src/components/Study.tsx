@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import type { Card, JapaneseCard } from '../data/deck.ts';
+import type { Card, ChineseCard, JapaneseCard } from '../data/deck.ts';
+
+export type Answer = 'right' | 'wrong' | 'known';
 
 interface Props {
   card: Card;
@@ -7,26 +9,30 @@ interface Props {
   total: number;
   /** Predicted chance of recall, or null for a card you have not seen before. */
   predicted: number | null;
-  onAnswer: (recalled: boolean) => void;
+  onAnswer: (answer: Answer) => void;
   onQuit: () => void;
 }
 
+const KIND_LABEL: Record<ChineseCard['kind'], string> = { word: 'Chinese', chengyu: 'Chinese · 成语', phrase: 'Chinese · everyday phrase', mine: 'Chinese · your phrase' };
+
 export function Study({ card, position, total, predicted, onAnswer, onQuit }: Props) {
   const [revealed, setRevealed] = useState(false);
+  const isNew = predicted === null;
 
-  // Keyboard: Space or Enter shows the answer, then 1 / ← for "forgot" and 2 / → for "remembered".
+  // Keyboard: Space or Enter shows the answer, then 1 / ← for "forgot", 2 / → for "remembered", 3 for "already knew".
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLButtonElement && (event.key === ' ' || event.key === 'Enter')) return;
       if (!revealed && (event.key === ' ' || event.key === 'Enter')) {
         event.preventDefault();
         setRevealed(true);
-      } else if (revealed && (event.key === '1' || event.key === 'ArrowLeft')) onAnswer(false);
-      else if (revealed && (event.key === '2' || event.key === 'ArrowRight')) onAnswer(true);
+      } else if (revealed && (event.key === '1' || event.key === 'ArrowLeft')) onAnswer('wrong');
+      else if (revealed && (event.key === '2' || event.key === 'ArrowRight')) onAnswer('right');
+      else if (isNew && event.key === '3') onAnswer('known');
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [revealed, onAnswer]);
+  }, [revealed, isNew, onAnswer]);
 
   return (
     <main className={`page study study--${card.lang}`}>
@@ -44,8 +50,8 @@ export function Study({ card, position, total, predicted, onAnswer, onQuit }: Pr
 
       <section className="flashcard" aria-live="polite">
         <p className="flashcard__meta">
-          <span className="chip">{card.lang === 'ja' ? `Japanese · ${card.level}` : card.kind === 'chengyu' ? 'Chinese · 成语' : 'Chinese'}</span>
-          <span className="flashcard__guess">{predicted === null ? 'New card' : `Memora predicts ${Math.round(predicted * 100)}% recall`}</span>
+          <span className="chip">{card.lang === 'ja' ? `Japanese · ${card.level}` : KIND_LABEL[card.kind]}</span>
+          <span className="flashcard__guess">{isNew ? 'New card' : `Memora predicts ${Math.round(predicted * 100)}% recall`}</span>
         </p>
 
         {card.lang === 'ja' ? (
@@ -75,6 +81,12 @@ export function Study({ card, position, total, predicted, onAnswer, onQuit }: Pr
                 <p className="flashcard__word" lang="zh-CN">
                   {card.word}
                 </p>
+                {card.example && (
+                  <p className="answer__example" lang="zh-CN">
+                    {card.example}
+                  </p>
+                )}
+                {card.source && <p className="answer__source">From {card.source}</p>}
               </div>
             )}
           </>
@@ -84,10 +96,10 @@ export function Study({ card, position, total, predicted, onAnswer, onQuit }: Pr
       <footer className="study__actions">
         {revealed ? (
           <>
-            <button className="button button--forgot" onClick={() => onAnswer(false)}>
+            <button key="wrong" className="button button--forgot" onClick={() => onAnswer('wrong')}>
               Forgot
             </button>
-            <button className="button button--primary" onClick={() => onAnswer(true)}>
+            <button key="right" className="button button--primary" onClick={() => onAnswer('right')}>
               Remembered
             </button>
           </>
@@ -95,6 +107,11 @@ export function Study({ card, position, total, predicted, onAnswer, onQuit }: Pr
           // Keyed so React does not reuse this element (and its keyboard focus) as the "Forgot" button.
           <button key="reveal" className="button button--primary button--wide" onClick={() => setRevealed(true)}>
             Show answer
+          </button>
+        )}
+        {isNew && (
+          <button key="known" className="link study__known" onClick={() => onAnswer('known')}>
+            I already know this, skip it
           </button>
         )}
       </footer>

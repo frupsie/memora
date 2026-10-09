@@ -32,7 +32,12 @@ export interface ChineseCard {
   word: string;
   pinyin: string;
   meaning: string;
-  kind: 'word' | 'chengyu';
+  /** `mine` is a phrase you added yourself; the rest come with the app. */
+  kind: 'word' | 'chengyu' | 'phrase' | 'mine';
+  /** Where you came across it: a show, a song, a conversation. */
+  source?: string;
+  /** The line you heard it in, or your own sentence using it. */
+  example?: string;
 }
 
 export type Card = JapaneseCard | ChineseCard;
@@ -163,7 +168,26 @@ const chengyu: ZhRow[] = [
   ['胸有成竹', 'xiōng yǒu chéng zhú', 'to have a well-thought-out plan'],
 ];
 
-const idFrom = (lang: string, text: string) => `${lang}-${text.toLowerCase().replace(/[^a-z0-9āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü]+/g, '-')}`;
+/** Everyday expressions you hear in conversations, shows and online, rather than in textbooks. */
+const phrases: ZhRow[] = [
+  ['内卷', 'nèijuǎn', 'rat race; pointless over-competition'],
+  ['躺平', 'tǎngpíng', 'to "lie flat": opt out of the rat race'],
+  ['摆烂', 'bǎilàn', 'to give up and let things get worse'],
+  ['破防', 'pòfáng', 'to have your emotional defences broken; be deeply moved or hurt'],
+  ['内耗', 'nèihào', 'draining yourself with overthinking'],
+  ['凡尔赛', 'fán\'ěrsài', 'a humblebrag (from "Versailles")'],
+  ['社恐', 'shèkǒng', 'socially anxious (short for 社交恐惧)'],
+  ['佛系', 'fóxì', 'laid-back, going with the flow'],
+  ['吃瓜', 'chīguā', 'to watch drama or gossip unfold as a bystander'],
+  ['种草', 'zhòngcǎo', 'to make someone want to buy something'],
+  ['打卡', 'dǎkǎ', 'to check in; to visit a popular spot and post about it'],
+  ['画饼', 'huàbǐng', 'to make empty promises (draw a cake)'],
+  ['甩锅', 'shuǎiguō', 'to pass the blame onto someone else'],
+  ['靠谱', 'kàopǔ', 'reliable, makes sense'],
+  ['接地气', 'jiē dìqì', 'down-to-earth, relatable'],
+];
+
+const idFrom =(lang: string, text: string) => `${lang}-${text.toLowerCase().replace(/[^a-z0-9āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜü]+/g, '-')}`;
 
 export const deck: Card[] = [
   ...japanese.map(([word, kana, romaji, meaning, level, relation, zhWord, zhPinyin, zhMeaning]): JapaneseCard => ({
@@ -179,6 +203,7 @@ export const deck: Card[] = [
   })),
   ...chineseWords.map(([word, pinyin, meaning]): ChineseCard => ({ id: idFrom('zh', pinyin), lang: 'zh', word, pinyin, meaning, kind: 'word' })),
   ...chengyu.map(([word, pinyin, meaning]): ChineseCard => ({ id: idFrom('zh', pinyin), lang: 'zh', word, pinyin, meaning, kind: 'chengyu' })),
+  ...phrases.map(([word, pinyin, meaning]): ChineseCard => ({ id: idFrom('zh', pinyin), lang: 'zh', word, pinyin, meaning, kind: 'phrase' })),
 ];
 
 export const deckById = new Map(deck.map((card) => [card.id, card]));

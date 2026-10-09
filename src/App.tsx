@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { deck, type Card } from './data/deck.ts';
-import { emptyProgress, loadProgress, recallNow, recordReview, saveProgress } from './lib/progress.ts';
+import { addPhrase, emptyProgress, loadProgress, markKnown, recallNow, recordReview, removePhrase, saveProgress } from './lib/progress.ts';
 import { buildSession } from './lib/scheduler.ts';
 import { Home } from './components/Home.tsx';
-import { Study } from './components/Study.tsx';
+import { Study, type Answer } from './components/Study.tsx';
 import { Summary } from './components/Summary.tsx';
+import { Phrases } from './components/Phrases.tsx';
 
 type Screen =
   | { name: 'home' }
-  | { name: 'study'; queue: Card[]; index: number; retried: string[]; right: number; wrong: number }
-  | { name: 'done'; right: number; wrong: number };
+  | { name: 'phrases' }
+  | { name: 'study'; lang: Card['lang']; queue: Card[]; index: number; retried: string[]; right: number; wrong: number; known: number }
+  | { name: 'done'; lang: Card['lang']; right: number; wrong: number; known: number };
 
 /** A missed card comes back this many cards later, once per session. */
 const RETRY_GAP = 3;
@@ -17,19 +19,29 @@ const RETRY_GAP = 3;
 export function App() {
   const [progress, setProgress] = useState(loadProgress);
   const [screen, setScreen] = useState<Screen>({ name: 'home' });
+  const cards = useMemo(() => [...deck, ...progress.phrases], [progress.phrases]);
 
-  useEffect(() => saveProgress(progress), [progress]);
+  useEffect(() => {
+    saveProgress(progress);
+  }, [progress]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [screen.name]);
 
   if (screen.name === 'study') {
     const card = screen.queue[screen.index]!;
-    const answer = (recalled: boolean) => {
-      setProgress((p) => recordReview(p, card, recalled, Date.now()));
-      const retry = !recalled && !screen.retried.includes(card.id);
+    const answer = (result: Answer) => {
+      const now = Date.now();
+      setProgress((p) => (result === 'known' ? markKnown(p, card, now) : recordReview(p, card, result === 'right', now)));
+      const retry = result === 'wrong' && !screen.retried.includes(card.id);
       const queue = retry ? screen.queue.toSpliced(screen.index + 1 + RETRY_GAP, 0, card) : screen.queue;
-      const right = screen.right + (recalled ? 1 : 0);
-      const wrong = screen.wrong + (recalled ? 0 : 1);
-      if (screen.index + 1 >= queue.length) setScreen({ name: 'done', right, wrong });
-      else setScreen({ ...screen, queue, index: screen.index + 1, retried: retry ? [...screen.retried, card.id] : screen.retried, right, wrong });
+      const tally = {
+        right: screen.right + (result === 'right' ? 1 : 0),
+        wrong: screen.wrong + (result === 'wrong' ? 1 : 0),
+        known: screen.known + (result === 'known' ? 1 : 0),
+      };
+      if (screen.index + 1 >= queue.length) setScreen({ name: 'done', lang: screen.lang, ...tally });
+      else setScreen({ ...screen, ...tally, queue, index: screen.index + 1, retried: retry ? [...screen.retried, card.id] : screen.retried });
     };
     return (
       <Study
@@ -44,15 +56,27 @@ export function App() {
     );
   }
 
-  if (screen.name === 'done') return <Summary right={screen.right} wrong={screen.wrong} onHome={() => setScreen({ name: 'home' })} />;
+  if (screen.name === 'done') return <Summary {...screen} onHome={() => setScreen({ name: 'home' })} />;
+
+  if (screen.name === 'phrases')
+    return (
+      <Phrases
+        phrases={progress.phrases}
+        onAdd={(phrase) => setProgress((p) => addPhrase(p, phrase, Date.now()))}
+        onRemove={(id) => setProgress((p) => removePhrase(p, id))}
+        onBack={() => setScreen({ name: 'home' })}
+      />
+    );
 
   return (
     <Home
+      cards={cards}
       progress={progress}
-      onStart={() => {
-        const queue = buildSession(deck, progress, Date.now());
-        if (queue.length) setScreen({ name: 'study', queue, index: 0, retried: [], right: 0, wrong: 0 });
+      onStart={(lang) => {
+        const queue = buildSession(cards, progress, lang, Date.now());
+        if (queue.length) setScreen({ name: 'study', lang, queue, index: 0, retried: [], right: 0, wrong: 0, known: 0 });
       }}
+      onPhrases={() => setScreen({ name: 'phrases' })}
       onReset={() => setProgress(emptyProgress())}
     />
   );
