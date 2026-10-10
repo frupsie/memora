@@ -7,7 +7,7 @@ export type Answer = 'right' | 'wrong' | 'known';
 interface Props {
   card: Card;
   mode: Mode;
-  /** All cards, for the listening exercise's wrong choices. */
+  /** All cards, for the wrong choices in the listening and fill-in-the-blank exercises. */
   cards: Card[];
   position: number;
   total: number;
@@ -53,7 +53,7 @@ export function Study({ card, mode, cards, position, total, predicted, onAnswer,
       ) : mode === 'listen' && card.lang === 'ja' ? (
         <ListenActivity card={card} cards={cards} meta={meta} skip={skip} onAnswer={onAnswer} />
       ) : mode === 'cloze' && card.lang === 'zh' ? (
-        <ClozeActivity card={card} meta={meta} skip={skip} onAnswer={onAnswer} />
+        <ClozeActivity card={card} cards={cards} meta={meta} skip={skip} onAnswer={onAnswer} />
       ) : (
         <FlashcardActivity card={card} meta={meta} skip={skip} onAnswer={onAnswer} />
       )}

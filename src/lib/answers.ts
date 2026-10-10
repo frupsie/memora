@@ -1,4 +1,4 @@
-/** Checking typed answers: Japanese readings (kana or romaji) and Chinese fill-in-the-blanks. */
+/** Checking typed Japanese readings (kana or romaji), and cutting the blank out of a Chinese example sentence. */
 
 import { toHiragana, toRomaji } from 'wanakana';
 
@@ -38,11 +38,4 @@ export function clozeParts(example: string | undefined, word: string): [before: 
   const at = example?.indexOf(word) ?? -1;
   if (!example || at < 0) return null;
   return [example.slice(0, at), example.slice(at + word.length)];
-}
-
-const bare = (text: string) => text.replace(/[\s\p{P}\p{S}]/gu, '');
-
-export function checkCloze(input: string, word: string): Verdict {
-  const typed = bare(input);
-  return typed && typed === bare(word) ? 'right' : 'wrong';
 }

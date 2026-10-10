@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkCloze, checkReading, clozeParts } from './answers.ts';
+import { checkReading, clozeParts } from './answers.ts';
 
 describe('checkReading', () => {
   it('accepts hiragana, katakana and romaji', () => {
@@ -34,12 +34,5 @@ describe('cloze', () => {
     expect(clozeParts('我只想躺平。', '躺平')).toEqual(['我只想', '。']);
     expect(clozeParts('没有这个词', '躺平')).toBeNull();
     expect(clozeParts(undefined, '躺平')).toBeNull();
-  });
-
-  it('ignores spaces and punctuation in the answer', () => {
-    expect(checkCloze(' 躺平 ', '躺平')).toBe('right');
-    expect(checkCloze('亡羊补牢，', '亡羊补牢')).toBe('right');
-    expect(checkCloze('躺下', '躺平')).toBe('wrong');
-    expect(checkCloze('', '躺平')).toBe('wrong');
   });
 });

@@ -1,12 +1,12 @@
 /**
  * The exercises. Each one shows a card, finds out whether you remembered it, and reports that through `onAnswer`.
- * Typed answers are checked automatically, with a way to overrule the check when it got it wrong (a typo, a variant).
+ * Typed answers are checked automatically, with a way to overrule the check when it got it wrong (a typo).
  */
 
 import { useEffect, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import type { Card, ChineseCard, JapaneseCard } from '../data/deck.ts';
-import { listeningChoices } from '../lib/activities.ts';
-import { checkCloze, checkReading, clozeParts, typedKana, type Verdict } from '../lib/answers.ts';
+import { clozeChoices, listeningChoices } from '../lib/activities.ts';
+import { checkReading, clozeParts, typedKana, type Verdict } from '../lib/answers.ts';
 import { speakJapanese, useJapaneseVoice } from '../lib/speech.ts';
 import type { Answer } from './Study.tsx';
 
@@ -175,15 +175,7 @@ export function ListenActivity({ card, cards, meta, skip, onAnswer }: ActivityPr
     speakJapanese(card.kana);
   }, [card]);
 
-  useEffect(() => {
-    if (picked !== null) return;
-    const onKey = (event: KeyboardEvent) => {
-      const choice = choices[Number(event.key) - 1];
-      if (choice) setPicked(choice);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [picked, choices]);
+  useChoiceKeys(choices, picked === null, setPicked);
 
   return (
     <>
@@ -226,15 +218,15 @@ export function ListenActivity({ card, cards, meta, skip, onAnswer }: ActivityPr
   );
 }
 
-/* Fill the blank: an example sentence with the phrase taken out. */
+/* Fill the blank: an example sentence with the phrase taken out, and four phrases to choose from. */
 
-export function ClozeActivity({ card, meta, skip, onAnswer }: ActivityProps<ChineseCard>) {
-  const [input, setInput] = useState('');
-  const [verdict, setVerdict] = useState<Verdict | null>(null);
-  const [hint, setHint] = useState(false);
+export function ClozeActivity({ card, cards, meta, skip, onAnswer }: ActivityProps<ChineseCard> & { cards: Card[] }) {
+  const [choices] = useState(() => clozeChoices(card, cards));
+  const [picked, setPicked] = useState<ChineseCard | null>(null);
+  const verdict: Verdict | null = picked === null ? null : picked.word === card.word ? 'right' : 'wrong';
   const [before, after] = clozeParts(card.example, card.word) ?? ['', ''];
 
-  const check = (giveUp = false) => setVerdict(giveUp ? 'wrong' : checkCloze(input, card.word));
+  useChoiceKeys(choices, picked === null, setPicked);
 
   return (
     <>
@@ -246,55 +238,57 @@ export function ClozeActivity({ card, meta, skip, onAnswer }: ActivityProps<Chin
           {after}
         </p>
         <p className="flashcard__prompt flashcard__prompt--small">{card.meaning}</p>
-        {verdict === null ? (
-          <div className="typed">
-            <label className="flashcard__task" htmlFor="cloze">
-              Fill in the blank
-            </label>
-            <input
-              id="cloze"
-              lang="zh-CN"
-              className="typed__input"
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={onEnter(() => check())}
-              autoFocus
-              autoComplete="off"
-              enterKeyHint="done"
-            />
-            <button className="link" onClick={() => setHint(true)} disabled={hint}>
-              {hint ? card.pinyin : 'Show pinyin'}
+        {verdict === null && <p className="flashcard__task">Pick the phrase that fills the blank</p>}
+        <div className="choices">
+          {choices.map((choice, i) => (
+            <button
+              key={choice.id}
+              className={`choice${picked !== null && choice.word === card.word ? ' choice--right' : ''}${choice === picked && verdict === 'wrong' ? ' choice--wrong' : ''}`}
+              onClick={() => setPicked(choice)}
+              disabled={picked !== null}
+            >
+              <span className="choice__key">{i + 1}</span>
+              <span className="choice__text">
+                <span className="choice__word" lang="zh-CN">
+                  {choice.word}
+                </span>
+                {/* Once answered, every option shows what it means, so the wrong ones teach something too. */}
+                {picked !== null && (
+                  <span className="choice__detail">
+                    {choice.pinyin} · {choice.meaning}
+                  </span>
+                )}
+              </span>
             </button>
-          </div>
-        ) : (
-          <>
-            <VerdictBanner verdict={verdict} typed={input} />
-            <p className="flashcard__pinyin">{card.pinyin}</p>
-            {card.source && <p className="answer__source">From {card.source}</p>}
-          </>
-        )}
+          ))}
+        </div>
+        {verdict !== null && card.source && <p className="answer__source">From {card.source}</p>}
       </section>
 
-      <footer className="study__actions">
-        {verdict === null ? (
-          <>
-            <button key="giveup" className="button button--forgot" onClick={() => check(true)}>
-              I don’t know
-            </button>
-            <button key="check" className="button button--primary" onClick={() => check()} disabled={!input.trim()}>
-              Check
-            </button>
-          </>
-        ) : (
-          <NextButtons verdict={verdict} onAnswer={onAnswer} overrule="My answer was right too, count it" />
-        )}
-      </footer>
+      {verdict !== null && (
+        <footer className="study__actions">
+          <NextButtons verdict={verdict} onAnswer={onAnswer} />
+        </footer>
+      )}
       {verdict === null && skip}
     </>
   );
 }
 
 /* Shared pieces */
+
+/** Number keys 1 to 4 pick a choice while picking is still open. */
+function useChoiceKeys<T>(choices: T[], open: boolean, pick: (choice: T) => void) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      const choice = choices[Number(event.key) - 1];
+      if (choice !== undefined) pick(choice);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [choices, open, pick]);
+}
 
 /**
  * Enter checks the answer, except while an input method (Japanese or Chinese keyboard) is still composing:

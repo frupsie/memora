@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { deck, deckById, type JapaneseCard } from '../data/deck.ts';
-import { chooseMode, listeningChoices } from './activities.ts';
+import { deck, deckById, type ChineseCard, type JapaneseCard } from '../data/deck.ts';
+import { chooseMode, clozeChoices, listeningChoices } from './activities.ts';
 import { addPhrase, emptyProgress, recordReview } from './progress.ts';
 
 const NOW = new Date('2026-10-10T09:00:00').getTime();
@@ -27,6 +27,23 @@ describe('chooseMode', () => {
     expect(chooseMode(deckById.get('zh-tǎngpíng')!, emptyProgress(), true)).toBe('cloze');
     const progress = addPhrase(emptyProgress(), { word: '吃土', pinyin: 'chī tǔ', meaning: 'broke' }, NOW);
     expect(chooseMode(progress.phrases[0]!, progress, true)).toBe('flashcard');
+  });
+});
+
+describe('clozeChoices', () => {
+  it('offers the phrase and three of the same length, chengyu among chengyu', () => {
+    const chengyu = deckById.get('zh-bàn-tú-ér-fèi') as ChineseCard;
+    const choices = clozeChoices(chengyu, deck);
+    expect(choices).toHaveLength(4);
+    expect(choices).toContain(chengyu);
+    expect(choices.every((c) => c.word.length === 4)).toBe(true);
+    expect(choices.every((c) => c.kind === 'chengyu')).toBe(true);
+  });
+
+  it('matches two-character words with two-character words', () => {
+    const choices = clozeChoices(deckById.get('zh-tǎngpíng') as ChineseCard, deck);
+    expect(new Set(choices.map((c) => c.word)).size).toBe(4);
+    expect(choices.every((c) => c.word.length === 2)).toBe(true);
   });
 });
 

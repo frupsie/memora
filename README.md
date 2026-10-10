@@ -17,7 +17,7 @@ Japanese and Chinese are studied separately, each with its own session.
   - *Flashcard*: introduces a new Japanese word.
   - *Type the reading*: in kana or romaji (gakkou, がっこう and ガッコウ all count), checked automatically. Missing a long vowel or double consonant counts as "almost". A wrong answer can be overruled if it was only a typo.
   - *Listen*: your phone says the word, and you pick its meaning from four. This uses the device's built-in Japanese voice, and the exercise is skipped on devices without one.
-  - *Fill the blank*: Chinese phrases are tested inside an example sentence. Built-in cards have one, and your own phrases use the line you saved.
+  - *Fill the blank*: Chinese phrases are tested inside an example sentence, by picking from four phrases of the same length and kind (成语 among 成语). Built-in cards have a sentence, and your own phrases use the line you saved. After you answer, every option shows its pinyin and meaning.
 - **A model decides what to review.** Memora uses half-life regression ([Settles & Meeder, 2016](https://aclanthology.org/P16-1174/), the model behind Duolingo's scheduling). Each card gets a memory half-life from its features (times right, times wrong, Chinese or Japanese, same meaning or false friend). A card is due once its predicted recall drops below 85%. The model's weights learn from every answer you give, so the predictions fit your memory over time.
 
 Progress is saved in your browser. **Export reviews (CSV)** on the home screen downloads your full review log, ready for training a better model offline.
